@@ -19,16 +19,16 @@ interface ModeSelectorProps {
 const ModeSelector: React.FC<ModeSelectorProps> = ({ value, onChange }) => {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full rounded-xl h-12 text-base">
+      <SelectTrigger className="w-full rounded-2xl h-14 text-base glass-card border-border/50 shadow-sm hover:border-primary/30 transition-all duration-300">
         <SelectValue placeholder="Select transport mode" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="rounded-2xl">
         {modes.map((mode) => {
           const Icon = mode.icon;
           return (
-            <SelectItem key={mode.value} value={mode.value}>
-              <span className="flex items-center gap-2">
-                <Icon size={16} />
+            <SelectItem key={mode.value} value={mode.value} className="rounded-xl">
+              <span className="flex items-center gap-3">
+                <Icon size={18} />
                 {mode.label}
               </span>
             </SelectItem>
