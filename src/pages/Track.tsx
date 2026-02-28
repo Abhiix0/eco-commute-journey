@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Zap, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,12 +9,11 @@ import BottomNav from "@/components/BottomNav";
 import {
   calculateDistance,
   calculateTotalDistance,
-  calculateAverageSpeed,
-  detectTransportMode,
   calculateCO2Saved,
   formatTime,
   getGeolocationErrorMessage,
 } from "@/lib/geolocation";
+import { calculateAverageSpeed } from "@/lib/speed";
 
 interface Coordinate {
   lat: number;
@@ -29,7 +28,7 @@ const Track: React.FC = () => {
   const [seconds, setSeconds] = useState(0);
   const [path, setPath] = useState<Coordinate[]>([]);
   const [currentPosition, setCurrentPosition] = useState<Coordinate | null>(null);
-  const [selectedMode, setSelectedMode] = useState("walk");
+  const [selectedMode, setSelectedMode] = useState<string>("walk");
   const [error, setError] = useState<string | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [isAcquiringGPS, setIsAcquiringGPS] = useState(false);
@@ -37,11 +36,15 @@ const Track: React.FC = () => {
   const watchIdRef = useRef<number | null>(null);
   const lastPositionRef = useRef<Coordinate | null>(null);
 
-  // Calculate metrics
-  const distance = calculateTotalDistance(path);
-  const avgSpeed = calculateAverageSpeed(distance, seconds);
-  const detectedMode = seconds > 10 ? detectTransportMode(avgSpeed) : selectedMode;
-  const co2Saved = calculateCO2Saved(distance);
+  // Calculate metrics safely with useMemo
+  const distance = useMemo(() => calculateTotalDistance(path), [path]);
+  
+  const avgSpeed = useMemo(() => {
+    if (seconds <= 0 || distance <= 0) return 0;
+    return calculateAverageSpeed(distance, seconds);
+  }, [distance, seconds]);
+  
+  const co2Saved = useMemo(() => calculateCO2Saved(distance), [distance]);
 
   // Timer
   useEffect(() => {
@@ -175,15 +178,30 @@ const Track: React.FC = () => {
 
   const handleStop = () => {
     setTracking(false);
-    if (distance > 0) {
+    
+    // Clean up tracking state
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    lastPositionRef.current = null;
+    
+    // Navigate to summary if distance is valid
+    if (distance > 0.01) { // Minimum 10 meters
       navigate("/summary", {
         state: {
           distance: distance.toFixed(2),
           time: seconds,
-          mode: detectedMode,
+          mode: selectedMode || "walk", // Use selected mode, fallback to walk
           co2Saved: co2Saved.toFixed(2),
         },
       });
+    } else {
+      // Reset state if distance too small
+      setSeconds(0);
+      setPath([]);
+      setCurrentPosition(null);
+      setError("Distance too small. Please track a longer commute.");
     }
   };
 
@@ -261,7 +279,7 @@ const Track: React.FC = () => {
             duration={formatTime(seconds)}
             distance={distance}
             co2Saved={co2Saved}
-            detectedMode={detectedMode}
+            detectedMode={selectedMode}
           />
         )}
       </AnimatePresence>

@@ -1,21 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { getStats, getTrips, Stats, Trip } from "@/lib/storage";
+import { getStatsFromStorage, EcoCommuteData } from "@/lib/storage";
 
 interface StatsContextType {
-  stats: Stats;
-  trips: Trip[];
+  stats: EcoCommuteData;
   refreshData: () => void;
 }
 
 const StatsContext = createContext<StatsContextType | undefined>(undefined);
 
 export const StatsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [stats, setStats] = useState<Stats>(getStats());
-  const [trips, setTrips] = useState<Trip[]>(getTrips());
+  const [stats, setStats] = useState<EcoCommuteData>(getStatsFromStorage());
 
   const refreshData = () => {
-    setStats(getStats());
-    setTrips(getTrips());
+    setStats(getStatsFromStorage());
   };
 
   // Load data on mount
@@ -24,7 +21,7 @@ export const StatsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   return (
-    <StatsContext.Provider value={{ stats, trips, refreshData }}>
+    <StatsContext.Provider value={{ stats, refreshData }}>
       {children}
     </StatsContext.Provider>
   );

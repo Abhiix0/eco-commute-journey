@@ -11,11 +11,11 @@ import { useStats } from "@/contexts/StatsContext";
 import { getRecentTrips, getTripsByMode, formatTripDate, getMonthlyProgress } from "@/lib/storage";
 
 const Dashboard: React.FC = () => {
-  const { stats, trips } = useStats();
+  const { stats } = useStats();
   
   // Use real stored data with proper formatting
   const totalDistance = stats.totalDistance.toFixed(2);
-  const carbonSaved = stats.totalCO2Saved.toFixed(2);
+  const carbonSaved = stats.totalCO2.toFixed(2);
   const ecoPoints = stats.totalPoints;
   const monthlyGoal = 50; // km
   const goalProgress = getMonthlyProgress(monthlyGoal);
@@ -29,6 +29,9 @@ const Dashboard: React.FC = () => {
     name: mode.charAt(0).toUpperCase() + mode.slice(1),
     value: count,
   }));
+
+  // Check if user has any trips
+  const hasTrips = stats.trips.length > 0;
 
   return (
     <div className="min-h-screen pt-20 pb-8 px-4 bg-gradient-to-b from-background to-accent/10">
@@ -170,13 +173,15 @@ const Dashboard: React.FC = () => {
         <ProjectionCard userCarbonSaved={carbonSaved} multiplier={1000} />
 
         {/* Chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.9 }}
-        >
-          <ChartCard title="Trips by Transport Mode" data={chartData} />
-        </motion.div>
+        {hasTrips && chartData.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.9 }}
+          >
+            <ChartCard title="Trips by Transport Mode" data={chartData} />
+          </motion.div>
+        )}
 
         {/* Recent trips */}
         <div className="space-y-3">
@@ -200,14 +205,17 @@ const Dashboard: React.FC = () => {
             </motion.div>
           ) : (
             recentTrips.map((trip, i) => {
-              const modeIcons: Record<string, React.ElementType> = {
-                walk: Footprints,
-                cycle: Bike,
-                bus: Bus,
-                carpool: Bus,
-                vehicle: TrainFront,
+              const modeIcons: Record<string, { icon: React.ElementType; emoji: string }> = {
+                walk: { icon: Footprints, emoji: "🚶" },
+                cycle: { icon: Bike, emoji: "🚴" },
+                bus: { icon: Bus, emoji: "🚍" },
+                carpool: { icon: Bus, emoji: "🚗" },
+                metro: { icon: TrainFront, emoji: "🚇" },
+                bike: { icon: Bike, emoji: "🏍️" },
+                car: { icon: TrainFront, emoji: "🚗" },
               };
-              const Icon = modeIcons[trip.mode] || Footprints;
+              const modeData = modeIcons[trip.mode] || modeIcons.walk;
+              const Icon = modeData.icon;
               
               return (
                 <motion.div
@@ -223,7 +231,9 @@ const Dashboard: React.FC = () => {
                     <Icon size={20} className="text-primary relative z-10" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-base font-semibold text-foreground capitalize">{trip.mode}</p>
+                    <p className="text-base font-semibold text-foreground capitalize flex items-center gap-2">
+                      {modeData.emoji} {trip.mode}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {formatTripDate(trip.date)} · {trip.distance.toFixed(1)} km
                     </p>

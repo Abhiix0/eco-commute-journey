@@ -29,7 +29,14 @@ const generateMockLeaderboard = (userPoints: number) => {
 
 const Leaderboard: React.FC = () => {
   const { stats } = useStats();
-  const mockUsers = generateMockLeaderboard(stats.totalPoints);
+  
+  // Use real user points from storage
+  const userPoints = stats.totalPoints;
+  const mockUsers = generateMockLeaderboard(userPoints);
+  
+  // Find user's rank
+  const userRank = mockUsers.findIndex(user => user.name === "You") + 1;
+  const hasTrips = stats.trips.length > 0;
   
   return (
     <div className="min-h-screen pt-20 pb-8 px-4 bg-gradient-to-b from-background to-accent/10">
@@ -51,10 +58,21 @@ const Leaderboard: React.FC = () => {
             <h2 className="text-3xl font-bold text-foreground">Leaderboard</h2>
           </div>
           <p className="text-sm text-muted-foreground">Top eco-commuters this month</p>
+          {hasTrips && userRank > 0 && (
+            <motion.p
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className="text-xs font-semibold text-primary"
+            >
+              Your Rank: #{userRank} • {userPoints} points
+            </motion.p>
+          )}
         </motion.div>
 
         {/* Podium highlight */}
-        <div className="flex items-end justify-center gap-4 py-6">
+        {mockUsers.length >= 3 && (
+          <div className="flex items-end justify-center gap-4 py-6">
           {/* 2nd Place */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -114,30 +132,45 @@ const Leaderboard: React.FC = () => {
             </div>
           </motion.div>
         </div>
+        )}
 
         {/* List with sequential animation */}
-        <div className="space-y-3">
-          {mockUsers.map((user, i) => (
-            <motion.div
-              key={user.name}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.5 + i * 0.08 }}
-              className="relative"
-            >
-              <LeaderboardRow
-                rank={i + 1}
-                name={user.name}
-                points={user.points}
-                isCurrentUser={user.name === "You"}
-              />
-              {/* Eco Badge for high achievers */}
-              <div className="absolute top-3 right-3">
-                <EcoBadge rank={i + 1} points={user.points} />
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {!hasTrips ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="glass-card rounded-2xl p-8 text-center border border-border/50"
+          >
+            <p className="text-base font-semibold text-foreground mb-2">Start Your Journey!</p>
+            <p className="text-sm text-muted-foreground">
+              Complete your first commute to join the leaderboard and compete with other eco-warriors.
+            </p>
+          </motion.div>
+        ) : (
+          <div className="space-y-3">
+            {mockUsers.map((user, i) => (
+              <motion.div
+                key={`${user.name}-${i}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.5 + i * 0.08 }}
+                className="relative"
+              >
+                <LeaderboardRow
+                  rank={i + 1}
+                  name={user.name}
+                  points={user.points}
+                  isCurrentUser={user.name === "You"}
+                />
+                {/* Eco Badge for high achievers */}
+                <div className="absolute top-3 right-3">
+                  <EcoBadge rank={i + 1} points={user.points} />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       <BottomNav />

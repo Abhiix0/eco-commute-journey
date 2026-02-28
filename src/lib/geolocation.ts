@@ -40,23 +40,6 @@ export const calculateTotalDistance = (
   return total;
 };
 
-// Calculate average speed in km/h
-export const calculateAverageSpeed = (
-  distanceKm: number,
-  durationSeconds: number
-): number => {
-  if (durationSeconds === 0) return 0;
-  const hours = durationSeconds / 3600;
-  return distanceKm / hours;
-};
-
-// Auto-detect transport mode based on average speed
-export const detectTransportMode = (avgSpeedKmh: number): string => {
-  if (avgSpeedKmh < 6) return "walk";
-  if (avgSpeedKmh < 20) return "cycle";
-  return "vehicle";
-};
-
 // Calculate CO2 saved (car equivalent: 0.12 kg per km)
 export const calculateCO2Saved = (distanceKm: number): number => {
   return distanceKm * 0.12;

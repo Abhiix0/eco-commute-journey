@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect } from "react";
 import { StatsProvider } from "@/contexts/StatsContext";
+import { initializeStorage, verifyDataIntegrity } from "@/lib/storage";
 import Index from "./pages/Index";
 import Track from "./pages/Track";
 import Summary from "./pages/Summary";
@@ -131,18 +133,26 @@ const AnimatedRoutes = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <StatsProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AnimatedRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
-    </StatsProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Initialize storage on app load
+  useEffect(() => {
+    initializeStorage();
+    verifyDataIntegrity();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <StatsProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </StatsProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

@@ -75,7 +75,7 @@ const Summary: React.FC = () => {
   const { 
     distance = "2.50", 
     time = 900, 
-    mode = "walk",
+    mode = "walk", // Default to walk if not provided
     co2Saved: passedCO2 = null 
   } = (location.state as { 
     distance?: string; 
@@ -84,7 +84,8 @@ const Summary: React.FC = () => {
     co2Saved?: string | null;
   }) || {};
   
-  const [selectedMode, setSelectedMode] = useState(mode);
+  // Use the mode passed from Track page, not a new state
+  const [selectedMode, setSelectedMode] = useState(mode || "walk");
   const [saved, setSaved] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -99,31 +100,39 @@ const Summary: React.FC = () => {
 
   // Use real cumulative data for milestone badges
   const totalDistance = parseFloat((stats.totalDistance + distNum).toFixed(2));
-  const totalCarbonSaved = parseFloat((stats.totalCO2Saved + carbonSaved).toFixed(2));
+  const totalCarbonSaved = parseFloat((stats.totalCO2 + carbonSaved).toFixed(2));
 
   // Animated counters
   const animatedCarbon = useCountUp(carbonSaved, 1200);
   const animatedPoints = useCountUp(ecoPoints, 1500);
 
   const handleSave = () => {
+    if (saved) return; // Prevent duplicate saves
+    
+    // Validate mode before saving
+    const modeToSave = selectedMode || "walk";
+    
     setSaved(true);
     setShowConfetti(true);
     
-    // Save trip to localStorage
+    // Save trip to localStorage with selected mode
     try {
       saveTrip({
         date: new Date().toISOString(),
-        distance: parseFloat(distNum.toFixed(2)),
         duration: time,
-        mode: selectedMode,
-        co2Saved: parseFloat(carbonSaved.toFixed(2)),
+        distance: parseFloat(distNum.toFixed(2)),
+        co2: parseFloat(carbonSaved.toFixed(2)),
         points: ecoPoints,
+        mode: modeToSave, // Use selected mode, not auto-detected
       });
       
       // Refresh global stats
       refreshData();
     } catch (error) {
       console.error("Failed to save trip:", error);
+      setSaved(false);
+      setShowConfetti(false);
+      return;
     }
     
     setTimeout(() => navigate("/dashboard"), 2000);
